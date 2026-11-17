@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply font-sans text-slate-800 antialiased; letter-spacing: -0.005em; }
+  tbody tr { transition: background-color .15s; }
+  tbody tr:hover { background-color: rgb(247 249 250); }
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500; }
+  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
+  .btn-ghost { @apply btn border border-slate-200 bg-white text-slate-700 hover:bg-slate-50; }
+  .btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700; }
+  .btn-sm { @apply px-3 py-1.5 text-xs; }
+  .input { @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:bg-slate-100 disabled:text-slate-500; }
+  .label { @apply mb-1.5 block text-xs font-medium text-slate-500; }
+  .card { @apply rounded-3xl bg-white shadow-sm; }
+  .th { @apply whitespace-nowrap px-5 py-3 text-left text-xs font-medium text-slate-400; }
+  .td { @apply px-5 py-3.5 text-sm text-slate-600; }
+}
+
+/* Tabel berubah menjadi daftar kartu di layar kecil (label diambil dari atribut data-label) */
+@media (max-width: 767px) {
+  .rtable thead { display: none; }
+  .rtable, .rtable tbody { display: block; width: 100%; }
+  .rtable tr { display: block; padding: 0.875rem 0.5rem; border-top: 0; border-bottom: 1px solid rgb(241 245 249); }
+  .rtable tr:last-child { border-bottom: 0; }
+  .rtable .td { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.3rem 0; text-align: right; }
+  .rtable .td::before { content: attr(data-label); flex-shrink: 0; font-size: 0.75rem; color: #94a3b8; text-align: left; }
+  .rtable .td[data-label=""]::before { display: none; }
+  .rtable .td[data-label=""] { justify-content: flex-end; padding-top: 0.6rem; }
+}
