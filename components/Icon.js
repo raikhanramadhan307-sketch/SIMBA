@@ -21,6 +21,7 @@ const PATHS = {
   search: 'M21 21l-4.3-4.3M11 18a7 7 0 100-14 7 7 0 000 14z',
   chevronDown: 'M6 9l6 6 6-6',
   check: 'M5 12l5 5L20 7',
+  lock: 'M7 11V7a5 5 0 0110 0v4M5 11h14a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8a1 1 0 011-1z',
 };
 
 export default function Icon({ name, className = 'h-5 w-5' }) {
