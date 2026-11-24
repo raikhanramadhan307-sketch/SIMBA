@@ -22,7 +22,7 @@ export async function POST(req) {
   if (user.role === 'supplier' && user.status === 'pending')
     return NextResponse.json({ error: 'Akun Anda sedang ditinjau oleh admin. Silakan coba lagi setelah akun disetujui.', code: 'pending' }, { status: 403 });
   if (user.role === 'supplier' && user.status === 'rejected')
-    return NextResponse.json({ error: 'Pendaftaran akun Anda ditolak oleh admin.', code: 'rejected' }, { status: 403 });
+    return NextResponse.json({ error: `Pendaftaran akun Anda ditolak oleh admin.${user.status_note ? ` Alasan: ${user.status_note}` : ''}`, code: 'rejected' }, { status: 403 });
 
   const token = await signToken({ id: user.id, role: user.role });
   const res = NextResponse.json({ ok: true, role: user.role });
