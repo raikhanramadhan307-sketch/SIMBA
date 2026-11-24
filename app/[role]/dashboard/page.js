@@ -12,7 +12,7 @@ const ACTION = {
   admin: ['Kelola Produk', 'products'], manager: ['Buat Restock Order', 'restock'],
   staff: ['Buat Transaksi', 'transactions'], supplier: ['Lihat Order', 'restock'],
 };
-const DOT = { pending: 'bg-amber-400', approved: 'bg-emerald-500', rejected: 'bg-red-500', shipped: 'bg-sky-500', confirmed: 'bg-sky-500', in_transit: 'bg-violet-500', received: 'bg-emerald-500' };
+const DOT = { pending: 'bg-amber-400', approved: 'bg-emerald-500', rejected: 'bg-red-500', shipped: 'bg-sky-500', confirmed: 'bg-sky-500', in_transit: 'bg-violet-500', inspecting: 'bg-cyan-500', returned: 'bg-orange-500', received: 'bg-emerald-500' };
 const num = (n) => new Intl.NumberFormat('id-ID').format(n || 0);
 const monthLabel = (ym) => new Date(`${ym}-01T00:00:00`).toLocaleDateString('id-ID', { month: 'short' });
 const pill = 'flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm';
@@ -82,7 +82,7 @@ export default function DashboardPage() {
         <span className="mt-3 inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">{ROLE_LABEL[user.role]}</span>
       </div>
       <div className="flex flex-wrap gap-2">
-        <span className={pill}><Icon name="calendar" className="h-4 w-4" />{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+        <span className={pill}><Icon name="calendar" className="h-4 w-4" /><span suppressHydrationWarning>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span></span>
         <Link href={`${base}/${actionHref}`} className={`${pill} font-medium hover:bg-slate-50`}><Icon name="plus" className="h-4 w-4" />{actionLabel}</Link>
       </div>
     </div>
@@ -104,10 +104,11 @@ export default function DashboardPage() {
               <div className="mt-2 text-4xl font-semibold">{count(d.restock, 'status', 'pending')}</div>
             </div>
           </Panel>
-          <div className="grid gap-4 sm:grid-cols-3 lg:col-span-8">
-            <Mini label="Dikonfirmasi" value={count(d.restock, 'status', 'confirmed')} badge="Confirmed" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:col-span-8 xl:grid-cols-4">
+            <Mini label="Siap dikirim" value={count(d.restock, 'status', 'confirmed')} badge="Confirmed" />
             <Mini label="Dalam pengiriman" value={count(d.restock, 'status', 'in_transit')} badge="In Transit" />
-            <Mini label="Diterima gudang" value={count(d.restock, 'status', 'received')} badge="Received" />
+            <Mini label="Diperiksa gudang" value={count(d.restock, 'status', 'inspecting')} badge="Inspecting" />
+            <Mini label="Diterima" value={count(d.restock, 'status', 'received')} badge="Received" />
           </div>
           <Panel className="lg:col-span-12" icon="truck" title="Order Terbaru" subtitle="Pesanan restock dari gudang" href={`${base}/restock`}>
             {d.recent.length === 0 ? <Empty>Belum ada order restock untuk Anda.</Empty> : (
@@ -156,11 +157,13 @@ export default function DashboardPage() {
           <Mini label="Menunggu approval" value={d.pendingTransactions} badge="Transaksi" href={`${base}/transactions`} />
           {d.role === 'admin'
             ? <Mini label="Supplier menunggu" value={d.pendingSuppliers} badge="Verifikasi" href={`${base}/suppliers`} />
-            : <Mini label="Restock berjalan" value={count(d.restock, 'status', 'confirmed') + count(d.restock, 'status', 'in_transit')} badge="Restock" href={d.role === 'manager' ? `${base}/restock` : undefined} />}
+            : d.role === 'staff'
+              ? <Mini label="PO perlu diperiksa" value={count(d.restock, 'status', 'inspecting')} badge="Penerimaan" href={`${base}/restock`} />
+              : <Mini label="Restock berjalan" value={count(d.restock, 'status', 'confirmed') + count(d.restock, 'status', 'in_transit') + count(d.restock, 'status', 'inspecting')} badge="Restock" href={`${base}/restock`} />}
         </div>
 
         {/* Grafik tengah */}
-        <Panel className="lg:col-span-6" icon="swap" title="Barang Masuk dan Keluar" subtitle="Qty transaksi yang sudah disetujui" href={`${base}/transactions`}
+        <Panel className="lg:col-span-6" icon="swap" title="Barang Masuk dan Keluar" subtitle="Barang masuk (Approved) dan barang keluar (Shipped)" href={`${base}/transactions`}
           action={<Segmented label="Periode" value={range} onChange={setRange} options={[['bulanan', 'Bulanan'], ['harian', 'Harian']]} />}>
           <div className="mb-2"><Legend /></div>
           {hasBars ? <BarChart data={bars} /> : <Empty>Belum ada transaksi yang disetujui pada periode ini.</Empty>}
