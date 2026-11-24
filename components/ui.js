@@ -46,11 +46,11 @@ export function Modal({ title, onClose, children, wide, footer }) {
 /* ---------- Badge ---------- */
 const BADGE = {
   Normal: 'bg-emerald-100 text-emerald-700', Low: 'bg-amber-100 text-amber-700',
-  Severe: 'bg-red-100 text-red-700', 'Out of Stock': 'bg-violet-100 text-violet-700',
+  Severe: 'bg-red-100 text-red-700', 'Out of Stock': 'bg-slate-200 text-slate-700',
   pending: 'bg-amber-100 text-amber-700', approved: 'bg-emerald-100 text-emerald-700',
   rejected: 'bg-red-100 text-red-700', shipped: 'bg-sky-100 text-sky-700',
   confirmed: 'bg-sky-100 text-sky-700', in_transit: 'bg-violet-100 text-violet-700',
-  received: 'bg-emerald-100 text-emerald-700', incoming: 'bg-sky-100 text-sky-700',
+  received: 'bg-emerald-100 text-emerald-700', inspecting: 'bg-cyan-100 text-cyan-700', returned: 'bg-orange-100 text-orange-700', incoming: 'bg-sky-100 text-sky-700',
   outgoing: 'bg-orange-100 text-orange-700',
 };
 const BADGE_LABEL = { in_transit: 'In Transit', incoming: 'Barang Masuk', outgoing: 'Barang Keluar' };

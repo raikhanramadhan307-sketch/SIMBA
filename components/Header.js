@@ -10,7 +10,8 @@ const MENUS = [
   { path: 'categories', label: 'Kategori', roles: ['admin', 'manager'] },
   { path: 'transactions', label: 'Transaksi', roles: ['admin', 'manager', 'staff'] },
   { path: 'transactions', label: 'Riwayat', roles: ['supplier'] },
-  { path: 'restock', label: 'Restock', roles: ['manager', 'supplier'] },
+  { path: 'restock', label: 'Restock', roles: ['admin', 'manager', 'supplier'] },
+  { path: 'restock', label: 'Penerimaan', roles: ['staff'] },
   { path: 'suppliers', label: 'Supplier', roles: ['admin'] },
 ];
 export const ROLE_LABEL = { admin: 'Admin', manager: 'Warehouse Manager', staff: 'Staff Gudang', supplier: 'Supplier' };

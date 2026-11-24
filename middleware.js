@@ -6,7 +6,7 @@ const ACCESS = {
   products: ['admin', 'manager', 'staff'],
   categories: ['admin', 'manager'],
   transactions: ['admin', 'manager', 'staff', 'supplier'],
-  restock: ['manager', 'supplier'],
+  restock: ['admin', 'manager', 'staff', 'supplier'],
   suppliers: ['admin'],
 };
 
