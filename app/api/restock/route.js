@@ -2,8 +2,10 @@ import { route, fail } from '@/lib/api';
 import { query, tx } from '@/lib/db';
 import { normalizeItems } from '@/lib/validators';
 import { parseJson } from '@/lib/utils';
+import { inspectionSql } from '@/lib/inspection';
 
 const SELECT = `SELECT r.*, COALESCE(s.company, s.name) AS supplier_name,
+  ${inspectionSql('r.id')} AS inspection,
   (SELECT json_agg(json_build_object('product_id', ri.product_id, 'name', p.name, 'sku', p.sku, 'unit', p.unit, 'quantity', ri.quantity))
    FROM restock_items ri JOIN products p ON p.id = ri.product_id WHERE ri.restock_id = r.id) AS items
   FROM restock_orders r LEFT JOIN users s ON s.id = r.supplier_id`;
@@ -13,9 +15,12 @@ export const GET = route(['admin', 'manager', 'staff', 'supplier'], async ({ use
   const where = [], params = [];
   if (user.role === 'supplier') { where.push('r.supplier_id = ?'); params.push(user.id); }
   if (sp.get('status')) { where.push('r.status = ?'); params.push(sp.get('status')); }
-  // PO Received yang belum dipakai Incoming Transaction (selain yang Rejected)
+  // PO yang siap dibuatkan Incoming Transaction: berstatus Inspecting, sudah ada laporan pemeriksaan,
+  // dan belum dipakai Incoming Transaction lain (selain yang Rejected)
   if (sp.get('available') === '1')
-    where.push(`r.status = 'received' AND NOT EXISTS (SELECT 1 FROM transactions t WHERE t.po_id = r.id AND t.status <> 'rejected')`);
+    where.push(`r.status = 'inspecting'
+      AND EXISTS (SELECT 1 FROM inspection_reports ir WHERE ir.restock_id = r.id)
+      AND NOT EXISTS (SELECT 1 FROM transactions t WHERE t.po_id = r.id AND t.status <> 'rejected')`);
   const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const rows = await query(`${SELECT} ${w} ORDER BY r.id DESC LIMIT 200`, params);
   return rows.map((r) => ({ ...r, items: parseJson(r.items) }));
