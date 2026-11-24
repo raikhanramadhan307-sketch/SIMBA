@@ -31,24 +31,24 @@ export const POST = route(['staff'], async ({ user, body }) => {
   if (!['incoming', 'outgoing'].includes(type)) fail(400, 'Tipe transaksi tidak valid');
   if (!body.trx_date) fail(400, type === 'incoming' ? 'Tanggal penerimaan wajib diisi' : 'Tanggal pengiriman wajib diisi');
   if (!String(body.notes || '').trim()) fail(400, 'Catatan wajib diisi');
-  const items = normalizeItems(body.items);
 
-  let supplier_id = null, po_id = null, customer = null;
+  let items, supplier_id = null, po_id = null, customer = null;
   if (type === 'incoming') {
-    if (body.po_id) {
-      const [po] = await query('SELECT * FROM restock_orders WHERE id = ?', [body.po_id]);
-      if (!po) fail(404, 'Restock order tidak ditemukan');
-      if (po.status !== 'received') fail(400, 'Nomor PO harus berasal dari Restock Order berstatus Received');
-      const used = await query(`SELECT id FROM transactions WHERE po_id = ? AND status <> 'rejected'`, [po.id]);
-      if (used.length) fail(409, 'Restock Order ini sudah dipakai oleh Incoming Transaction lain');
-      po_id = po.id;
-      supplier_id = po.supplier_id; // supplier selalu mengikuti PO
-    } else {
-      const [s] = await query(`SELECT id FROM users WHERE id = ? AND role = 'supplier' AND status = 'approved'`, [Number(body.supplier_id) || 0]);
-      if (!s) fail(400, 'Supplier wajib dipilih');
-      supplier_id = s.id;
-    }
+    // Barang masuk selalu berdasarkan PO yang sudah diperiksa; produk dan quantity diambil dari PO
+    const poId = Number(body.po_id) || 0;
+    if (!poId) fail(400, 'Nomor PO wajib dipilih');
+    const [po] = await query('SELECT * FROM restock_orders WHERE id = ?', [poId]);
+    if (!po) fail(404, 'Restock order tidak ditemukan');
+    if (po.status !== 'inspecting') fail(400, 'Incoming Transaction hanya dapat dibuat dari PO berstatus Inspecting');
+    const report = await query('SELECT id FROM inspection_reports WHERE restock_id = ?', [po.id]);
+    if (!report.length) fail(400, 'Buat laporan pemeriksaan untuk PO ini terlebih dahulu');
+    const used = await query(`SELECT id FROM transactions WHERE po_id = ? AND status <> 'rejected'`, [po.id]);
+    if (used.length) fail(409, 'Restock Order ini sudah dipakai oleh Incoming Transaction lain');
+    po_id = po.id;
+    supplier_id = po.supplier_id; // supplier selalu mengikuti PO
+    items = await query('SELECT product_id, quantity FROM restock_items WHERE restock_id = ? ORDER BY id', [po.id]);
   } else {
+    items = normalizeItems(body.items);
     customer = String(body.customer_name || '').trim();
     if (!customer) fail(400, 'Nama customer/tujuan wajib diisi');
     await assertStock(items);
