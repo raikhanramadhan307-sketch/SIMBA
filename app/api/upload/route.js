@@ -7,7 +7,7 @@ const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' }
 
 export async function POST(req) {
   const user = await getUser();
-  if (!user || user.role === 'supplier') return NextResponse.json({ error: 'Tidak diizinkan' }, { status: 403 });
+  if (!user) return NextResponse.json({ error: 'Sesi tidak valid, silakan login ulang' }, { status: 401 });
   const file = (await req.formData()).get('file');
   if (!file || typeof file === 'string') return NextResponse.json({ error: 'File tidak ditemukan' }, { status: 400 });
   const ext = EXT[file.type];
