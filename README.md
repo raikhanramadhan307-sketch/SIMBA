@@ -36,9 +36,9 @@ Semua halaman berawalan nama peran. Peran hanya bisa membuka alamatnya sendiri.
 
 | Peran | Halaman |
 |---|---|
-| Admin | `/admin/dashboard`, `/admin/products`, `/admin/categories`, `/admin/transactions`, `/admin/suppliers` |
+| Admin | `/admin/dashboard`, `/admin/products`, `/admin/categories`, `/admin/transactions`, `/admin/restock`, `/admin/suppliers` |
 | Warehouse Manager | `/manager/dashboard`, `/manager/products`, `/manager/categories`, `/manager/transactions`, `/manager/restock` |
-| Staff Gudang | `/staff/dashboard`, `/staff/products`, `/staff/transactions` |
+| Staff Gudang | `/staff/dashboard`, `/staff/products`, `/staff/transactions`, `/staff/restock` (menu Penerimaan) |
 | Supplier | `/supplier/dashboard`, `/supplier/transactions`, `/supplier/restock` |
 
 Alamat lama `/dashboard/...` otomatis dialihkan ke alamat peran yang sesuai.
@@ -49,25 +49,43 @@ Semua peran juga punya halaman **Akun Saya** di `/{peran}/account` (dibuka dari 
 
 | Modul | Admin | Manager | Staff | Supplier |
 |---|---|---|---|---|
-| Produk (CRUD) | ✔ | ✔ | lihat | – |
-| Kategori (CRUD) | ✔ | ✔ | – | – |
-| Verifikasi Supplier | ✔ | – | – | – |
-| Transaksi: buat/edit/Shipped | – | – | ✔ | – |
-| Transaksi: approve/reject | – | ✔ | – | – |
-| Transaksi: hapus (Pending) | – | ✔ | milik sendiri | – |
-| Restock: buat, In Transit, Received | – | ✔ | – | – |
-| Restock: konfirmasi/tolak | – | – | – | ✔ |
-| Riwayat transaksi | lihat | lihat | ✔ | milik sendiri |
+| Produk dan Kategori (CRUD) | ✔ | ✔ | lihat produk | – |
+| Verifikasi Supplier (alasan wajib saat ditolak) | ✔ | – | – | – |
+| Restock: buat PO | – | ✔ | – | – |
+| Restock: konfirmasi / tolak (alasan wajib) | – | – | – | ✔ |
+| Restock: kirim (In Transit) dan bukti foto kedatangan | – | – | – | ✔ |
+| Restock: laporan pemeriksaan fisik | – | – | ✔ | – |
+| Restock: kembalikan PO (Returned, alasan wajib) dan ajukan refund | – | ✔ | – | – |
+| Barang masuk: buat dari PO | – | – | ✔ | – |
+| Barang keluar: buat, edit, hapus (Pending), Kirim Barang (Shipped) | – | – | ✔ | – |
+| Approve / reject transaksi (alasan wajib saat reject) | – | ✔ | – | – |
+| Lihat transaksi dan restock | ✔ (hanya lihat) | ✔ | ✔ | milik sendiri |
 
-## Aturan bisnis yang diterapkan
+## Alur dan aturan bisnis
 
-- Status stok dihitung otomatis: `0` → Out of Stock, `≤ min` → Severe, `≤ low` → Low, selain itu Normal. Stok Low harus > stok minimum.
-- Stok berubah hanya saat Manager **approve**, dalam satu transaksi database (`SELECT ... FOR UPDATE`). Reject tidak mengubah stok. `Shipped` dan `Received` tidak mengubah stok.
-- Barang keluar: quantity tidak boleh melebihi stok (dicek saat dibuat, diedit, dan di-approve).
-- Satu Restock Order hanya bisa dipakai satu Incoming Transaction yang belum Rejected; supplier otomatis mengikuti PO.
-- Hanya transaksi Pending yang bisa diedit/dihapus. Alasan wajib saat Reject (transaksi maupun restock oleh Supplier).
-- Kategori yang masih punya produk tidak bisa dihapus; produk bersisa stok memunculkan peringatan sebelum dihapus.
-- Supplier Pending/Rejected ditolak saat login dengan pesan yang sesuai.
+**Siklus PO:** `Pending → Confirmed / Rejected → In Transit → Inspecting → Received / Returned`
+
+1. Manager membuat PO (Pending).
+2. Supplier mengonfirmasi, atau menolak dengan alasan wajib (berhenti).
+3. Supplier mengubah status menjadi **In Transit** saat barang dikirim.
+4. Barang tiba: Supplier mengunggah **bukti foto kedatangan**, status PO menjadi **Inspecting**.
+5. Staff Gudang memeriksa fisik barang (jumlah dan kondisi) dan membuat **laporan pemeriksaan**.
+6. **Barang sesuai:** Staff membuat Incoming Transaction dari PO (produk dan quantity terisi otomatis), Manager meng-approve, lalu **stok bertambah dan PO otomatis Received** dalam satu transaksi database.
+7. **Barang tidak sesuai:** Manager menolak penerimaan atau mengembalikan PO (**Returned**, alasan wajib), stok tidak bertambah. Manager lalu dapat **mengajukan refund** dan membuat PO baru (tombol *Buat PO Baru* menyalin isi PO lama).
+
+**Barang keluar:** `Pending → Approved / Rejected → Shipped`. Stok **belum** berkurang saat Approved. Stok berkurang saat Staff menekan **Kirim Barang (Shipped)**, dan alur selesai.
+
+**Aturan stok:**
+- Stok bertambah **hanya** saat Incoming Transaction di-approve Manager.
+- Stok berkurang **hanya** saat Outgoing Transaction berstatus Shipped.
+- Quantity barang keluar tidak boleh melebihi stok saat dibuat, diedit, dan saat dikirim.
+- Satu PO hanya dapat dipakai satu Incoming Transaction yang belum Rejected.
+- Incoming Transaction tidak dapat di-approve bila laporan pemeriksaan menyatakan barang tidak sesuai.
+- Setiap penolakan (Supplier, PO, Returned, Incoming, Outgoing) wajib disertai alasan.
+
+**Status stok otomatis:** Out of Stock (abu-abu) bila stok 0; Severe (merah) bila 0 < stok ≤ stok minimum; Low (kuning) bila stok minimum < stok ≤ stok Low; Normal (hijau) bila stok > stok Low.
+
+Kategori yang masih punya produk tidak dapat dihapus. Menghapus produk yang masih berstok memunculkan peringatan. SKU dan nama kategori unik; SKU tidak dapat diubah.
 
 ## Struktur
 
