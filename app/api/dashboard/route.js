@@ -28,7 +28,7 @@ export const GET = route(null, async ({ user }) => {
       COALESCE(SUM(ti.quantity) FILTER (WHERE t.type = 'incoming'), 0) AS incoming,
       COALESCE(SUM(ti.quantity) FILTER (WHERE t.type = 'outgoing'), 0) AS outgoing
     FROM generate_series(date_trunc('month', CURRENT_DATE) - interval '5 months', date_trunc('month', CURRENT_DATE), interval '1 month') m
-    LEFT JOIN transactions t ON date_trunc('month', t.trx_date) = m AND t.status IN ('approved', 'shipped')
+    LEFT JOIN transactions t ON date_trunc('month', t.trx_date) = m AND ((t.type = 'incoming' AND t.status = 'approved') OR (t.type = 'outgoing' AND t.status = 'shipped'))
     LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
     GROUP BY m ORDER BY m`);
   const daily = await query(`
@@ -36,7 +36,7 @@ export const GET = route(null, async ({ user }) => {
       COALESCE(SUM(ti.quantity) FILTER (WHERE t.type = 'incoming'), 0) AS incoming,
       COALESCE(SUM(ti.quantity) FILTER (WHERE t.type = 'outgoing'), 0) AS outgoing
     FROM generate_series(CURRENT_DATE - 13, CURRENT_DATE, interval '1 day') d
-    LEFT JOIN transactions t ON t.trx_date = d::date AND t.status IN ('approved', 'shipped')
+    LEFT JOIN transactions t ON t.trx_date = d::date AND ((t.type = 'incoming' AND t.status = 'approved') OR (t.type = 'outgoing' AND t.status = 'shipped'))
     LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
     GROUP BY d ORDER BY d`);
   const activeDays = (await query(
