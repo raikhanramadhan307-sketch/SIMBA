@@ -2,7 +2,7 @@
 -- Jalankan di pgAdmin: pilih database simba_db > Query Tool > buka file ini > Execute (F5)
 -- Semua akun seed memakai password: password123
 
-DROP TABLE IF EXISTS restock_items, restock_orders, transaction_items, transactions, products, categories, users CASCADE;
+DROP TABLE IF EXISTS inspection_items, inspection_reports, restock_items, restock_orders, transaction_items, transactions, products, categories, users CASCADE;
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -13,6 +13,7 @@ CREATE TABLE users (
   status VARCHAR(20) NOT NULL DEFAULT 'approved' CHECK (status IN ('pending','approved','rejected')),
   company VARCHAR(150),
   phone VARCHAR(30),
+  status_note TEXT,            -- alasan penolakan akun supplier (wajib saat Rejected)
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -48,8 +49,14 @@ CREATE TABLE restock_orders (
   order_date DATE NOT NULL,
   expected_date DATE NOT NULL,
   notes TEXT NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','confirmed','rejected','in_transit','received')),
-  status_note TEXT,
+  -- Pending -> Confirmed/Rejected -> In Transit -> Inspecting -> Received/Returned
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','confirmed','rejected','in_transit','inspecting','received','returned')),
+  status_note TEXT,            -- alasan Rejected (supplier) atau Returned (manager)
+  arrival_photo VARCHAR(255),  -- bukti foto dokumentasi kedatangan dari supplier
+  arrival_note TEXT,
+  arrived_at TIMESTAMP,
+  refund_requested_at TIMESTAMP,  -- klaim refund diajukan manager untuk PO Returned
+  refund_note TEXT,
   created_by INT NOT NULL REFERENCES users(id),
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -59,6 +66,25 @@ CREATE TABLE restock_items (
   restock_id INT NOT NULL REFERENCES restock_orders(id) ON DELETE CASCADE,
   product_id INT NOT NULL REFERENCES products(id),
   quantity INT NOT NULL CHECK (quantity > 0)
+);
+
+-- Laporan pemeriksaan fisik oleh Staff Gudang (satu laporan per PO)
+CREATE TABLE inspection_reports (
+  id SERIAL PRIMARY KEY,
+  restock_id INT NOT NULL UNIQUE REFERENCES restock_orders(id) ON DELETE CASCADE,
+  inspected_by INT NOT NULL REFERENCES users(id),
+  notes TEXT,
+  is_match BOOLEAN NOT NULL,   -- true jika semua jumlah sesuai PO dan tidak ada yang rusak
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE inspection_items (
+  id SERIAL PRIMARY KEY,
+  report_id INT NOT NULL REFERENCES inspection_reports(id) ON DELETE CASCADE,
+  product_id INT NOT NULL REFERENCES products(id),
+  ordered_qty INT NOT NULL,
+  received_qty INT NOT NULL CHECK (received_qty >= 0),
+  damaged_qty INT NOT NULL DEFAULT 0 CHECK (damaged_qty >= 0 AND damaged_qty <= received_qty)
 );
 
 CREATE TABLE transactions (
