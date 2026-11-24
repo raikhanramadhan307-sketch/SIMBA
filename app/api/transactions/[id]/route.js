@@ -11,12 +11,17 @@ async function loadPending(id, user, verb) {
   return t;
 }
 
-// Edit: hanya produk, quantity, dan catatan
+// Edit (hanya Pending). Barang keluar: produk, quantity, catatan. Barang masuk: hanya catatan,
+// karena produk dan quantity mengikuti PO.
 export const PUT = route(['staff', 'manager'], async ({ user, body, params }) => {
   const t = await loadPending(params.id, user, 'diedit');
   if (!String(body.notes || '').trim()) fail(400, 'Catatan wajib diisi');
+  if (t.type === 'incoming') {
+    await query('UPDATE transactions SET notes = ? WHERE id = ?', [body.notes.trim(), t.id]);
+    return { message: 'Catatan transaksi berhasil diperbarui' };
+  }
   const items = normalizeItems(body.items);
-  if (t.type === 'outgoing') await assertStock(items);
+  await assertStock(items);
   await tx(async (c) => {
     await c.query('UPDATE transactions SET notes = ? WHERE id = ?', [body.notes.trim(), t.id]);
     await c.query('DELETE FROM transaction_items WHERE transaction_id = ?', [t.id]);
